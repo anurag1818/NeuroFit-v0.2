@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroFit Band - Brain & Health Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-brain"></i>
+                <span>NeuroFit Band</span>
+                <button class="mobile-menu-toggle" aria-label="Toggle navigation menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </button>
+                <button class="nav-item" data-page="bluetooth">
+                    <i class="fas fa-bluetooth"></i>
+                    Device
+                </button>
+                <button class="nav-item" data-page="meditation">
+                    <i class="fas fa-leaf"></i>
+                    Meditation
+                </button>
+                <button class="nav-item" data-page="emergency">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Emergency
+                </button>
+                <button class="nav-item" data-page="data">
+                    <i class="fas fa-table"></i>
+                    Data
+                </button>
+            </div>
+            <div class="user-menu">
+                <button id="loginBtn" class="btn-primary">Login</button>
+                <div id="userProfile" class="user-profile hidden">
+                    <span id="userName"></span>
+                    <button id="logoutBtn" class="btn-secondary">Logout</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div id="dashboard" class="page active">
+                <div class="page-header">
+                    <h1>Real-time Monitoring Dashboard</h1>
+                    <div class="connection-status">
+                        <div id="connectionIndicator" class="status-indicator disconnected">
+                            <i class="fas fa-circle"></i>
+                            <span>Disconnected</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Brain Activity Card -->
+                    <div class="card brain-activity">
+                        <div class="card-header">
+                            <h3><i class="fas fa-brain"></i> Brain Activity</h3>
+                            <div class="card-controls">
+                                <button id="toggleBrainChart" class="btn-icon">
+                                    <i class="fas fa-pause"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <canvas id="brainwaveChart"></canvas>
+                            <div class="brainwave-metrics">
+                                <div class="metric">
+                                    <span class="metric-label">Alpha</span>
+                                    <span id="alphaValue" class="metric-value">0%</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Beta</span>
+                                    <span id="betaValue" class="metric-value">0%</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Theta</span>
+                                    <span id="thetaValue" class="metric-value">0%</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Delta</span>
+                                    <span id="deltaValue" class="metric-value">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vital Signs Card -->
+                    <div class="card vital-signs">
+                        <div class="card-header">
+                            <h3><i class="fas fa-heartbeat"></i> Vital Signs</h3>
+                        </div>
+                        <div class="card-content">
+                            <canvas id="vitalChart"></canvas>
+                            <div class="vital-metrics">
+                                <div class="vital-item">
+                                    <i class="fas fa-heart"></i>
+                                    <div>
+                                        <span class="vital-label">Heart Rate</span>
+                                        <span id="heartRateValue" class="vital-value">-- BPM</span>
+                                    </div>
+                                </div>
+                                <div class="vital-item">
+                                    <i class="fas fa-lungs"></i>
+                                    <div>
+                                        <span class="vital-label">SpO2</span>
+                                        <span id="spo2Value" class="vital-value">--%</span>
+                                    </div>
+                                </div>
+                                <div class="vital-item">
+                                    <i class="fas fa-chart-line"></i>
+                                    <div>
+                                        <span class="vital-label">Stress Index</span>
+                                        <span id="stressValue" class="vital-value">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mood Analysis Card -->
+                    <div class="card mood-analysis">
+                        <div class="card-header">
+                            <h3><i class="fas fa-smile"></i> Mood Analysis</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="mood-display">
+                                <div class="mood-icon">
+                                    <i id="moodIcon" class="fas fa-meh"></i>
+                                </div>
+                                <div class="mood-info">
+                                    <h4 id="currentMood">Analyzing...</h4>
+                                    <p id="moodConfidence">Confidence: --%</p>
+                                </div>
+                            </div>
+                            <div class="mood-levels">
+                                <div class="level-bar">
+                                    <span>Focus</span>
+                                    <div class="progress-bar">
+                                        <div id="focusLevel" class="progress-fill"></div>
+                                    </div>
+                                </div>
+                                <div class="level-bar">
+                                    <span>Relaxation</span>
+                                    <div class="progress-bar">
+                                        <div id="relaxationLevel" class="progress-fill"></div>
+                                    </div>
+                                </div>
+                                <div class="level-bar">
+                                    <span>Attention</span>
+                                    <div class="progress-bar">
+                                        <div id="attentionLevel" class="progress-fill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions Card -->
+                    <div class="card quick-actions">
+                        <div class="card-header">
+                            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="actuttobuttons">
+                                <button id="startMeditation" class="action-btn meditation">
+                                    <i class="fas fa-leaf"></i>
+                                    Start Meditation
+                                </button>
+                                <button id="breathingExercise" class="action-btn breathing">
+                                    <i class="fas fa-wind"></i>
+                                    Breathing Exercise
+                                </button>
+                                <button id="calibrateDevice" class="action-btn calibrate">
+                                    <i class="fas fa-cog"></i>
+                                    Calibrate Device
+                                </button>
+                                <button id="emergencyAlert" class="action-btn emergency">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Emergency Alert
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bluetooth Connection Page -->
+            <div id="bluetooth" class="page">
+                <div class="page-header">
+                    <h1>Device Connection</h1>
+                </div>
+                
+                <div class="bluetooth-container">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-bluetooth"></i> NeuroFit Band Connection</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="connection-panel">
+                                <div class="device-status">
+                                    <div class="status-circle" id="deviceStatusCircle"></div>
+                                    <div class="status-info">
+                                        <h4 id="deviceStatusText">Not Connected</h4>
+                                        <p id="deviceInfo">Click scan to find your NeuroFit Band</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="connection-controls">
+                                    <button id="scanDevices" class="btn-primary">
+                                        <i class="fas fa-search"></i>
+                                        Scan for Devices
+                                    </button>
+                                    <button id="connectDevice" class="btn-success hidden">
+                                        <i class="fas fa-link"></i>
+                                        Connect
+                                    </button>
+                                    <button id="disconnectDevice" class="btn-danger hidden">
+                                        <i class="fas fa-unlink"></i>
+                                        Disconnect
+                                    </button>
+                                </div>
+                                
+                                <div id="deviceList" class="device-list hidden">
+                                    <h4>Available Devices:</h4>
+                                    <div id="devices"></div>
+                                </div>
+                                
+                                <div class="connection-log">
+                                    <h4>Connection Log:</h4>
+                                    <div id="connectionLog" class="log-container"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meditation Page -->
+            <div id="meditation" class="page">
+                <div class="page-header">
+                    <h1>Meditation & Relaxation</h1>
+                </div>
+                
+                <div class="meditation-container">
+                    <div class="meditation-grid">
+                        <!-- Guided Meditation Card -->
+                        <div class="card meditation-session">
+                            <div class="card-header">
+                                <h3><i class="fas fa-leaf"></i> Guided Meditation</h3>
+                            </div>
+                            <div class="card-content">
+                                <div class="meditation-controls">
+                                    <div class="session-selector">
+                                        <label>Choose Session:</label>
+                                        <select id="meditationSession">
+                                            <option value="stress-relief">Stress Relief (10 min)</option>
+                                            <option value="focus-boost">Focus Boost (15 min)</option>
+                                            <option value="deep-relaxation">Deep Relaxation (20 min)</option>
+                                            <option value="sleep-preparation">Sleep Preparation (25 min)</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="meditation-timer">
+                                        <div class="timer-display">
+                                            <span id="meditationTimer">00:00</span>
+                                        </div>
+                                        <div class="timer-controls">
+                                            <button id="startMeditationBtn" class="btn-primary">
+                                                <i class="fas fa-play"></i>
+                                                Start
+                                            </button>
+                                            <button id="pauseMeditationBtn" class="btn-secondary hidden">
+                                                <i class="fas fa-pause"></i>
+                                                Pause
+                                            </button>
+                                            <button id="stopMeditationBtn" class="btn-danger hidden">
+                                                <i class="fas fa-stop"></i>
+                                                Stop
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="meditation-visualization">
+                                    <div id="breathingCircle" class="breathing-circle">
+                                        <div class="circle-inner">
+                                            <span id="breathingText">Breathe</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Real-time Feedback Card -->
+                        <div class="card meditation-feedback">
+                            <div class="card-header">
+                                <h3><i class="fas fa-chart-line"></i> Real-time Feedback</h3>
+                            </div>
+                            <div class="card-content">
+                                <canvas id="meditationChart"></canvas>
+                                <div class="feedback-metrics">
+                                    <div class="feedback-item">
+                                        <span class="feedback-label">Relaxation Level</span>
+                                        <div class="progress-bar">
+                                            <div id="meditationRelaxation" class="progress-fill"></div>
+                                        </div>
+                                    </div>
+                                    <div class="feedback-item">
+                                        <span class="feedback-label">Heart Rate Variability</span>
+                                        <div class="progress-bar">
+                                            <div id="meditationHRV" class="progress-fill"></div>
+                                        </div>
+                                    </div>
+                                    <div class="feedback-item">
+                                        <span class="feedback-label">Meditation Quality</span>
+                                        <div class="progress-bar">
+                                            <div id="meditationQuality" class="progress-fill"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Page -->
+            <div id="emergency" class="page">
+                <div class="page-header">
+                    <h1>Emergency Settings</h1>
+                </div>
+                
+                <div class="emergency-container">
+                    <div class="emergency-grid">
+                        <!-- Emergency Contact Setup -->
+                        <div class="card emergency-setup">
+                            <div class="card-header">
+                                <h3><i class="fas fa-phone"></i> Emergency Contact</h3>
+                            </div>
+                            <div class="card-content">
+                                <div class="form-group">
+                                    <label for="emergencyName">Contact Name:</label>
+                                    <input type="text" id="emergencyName" placeholder="Enter contact name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="emergencyPhone">Phone Number:</label>
+                                    <input type="tel" id="emergencyPhone" placeholder="+1 (555) 123-4567">
+                                </div>
+                                <div class="form-group">
+                                    <label for="emergencyThreshold">Alert Threshold:</label>
+                                    <select id="emergencyThreshold">
+                                        <option value="high">High Stress (80+)</option>
+                                        <option value="critical">Critical (90+)</option>
+                                        <option value="extreme">Extreme (95+)</option>
+                                    </select>
+                                </div>
+                                <button id="saveEmergencySettings" class="btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    Save Settings
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Emergency Status -->
+                        <div class="card emergency-status">
+                            <div class="card-header">
+                                <h3><i class="fas fa-shield-alt"></i> Emergency Status</h3>
+                            </div>
+                            <div class="card-content">
+                                <div class="status-display">
+                                    <div id="emergencyStatusIcon" class="status-icon safe">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                    <div class="status-info">
+                                        <h4 id="emergencyStatusText">All Systems Normal</h4>
+                                        <p id="emergencyStatusDetail">No alerts detected</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="emergency-actions">
+                                    <button id="testEmergencyAlert" class="btn-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Test Emergency Alert
+                                    </button>
+                                    <button id="manualEmergencyAlert" class="btn-danger">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        Manual Emergency Alert
+                                    </button>
+                                </div>
+                                
+                                <div class="location-status">
+                                    <h4>Location Services</h4>
+                                    <div class="location-info">
+                                        <span id="locationStatus">Checking location...</span>
+                                        <button id="enableLocation" class="btn-secondary">Enable Location</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Alerts -->
+                        <div class="card recent-alerts">
+                            <div class="card-header">
+                                <h3><i class="fas fa-history"></i> Recent Alerts</h3>
+                            </div>
+                            <div class="card-content">
+                                <div id="alertHistory" class="alert-history">
+                                    <p class="no-alerts">No recent alerts</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table Page -->
+            <div id="data" class="page">
+                <div class="page-header">
+                    <h1>Data Analytics</h1>
+                    <div class="data-controls">
+                        <select id="dataTimeRange">
+                            <option value="1h">Last Hour</option>
+                            <option value="24h">Last 24 Hours</option>
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                        </select>
+                        <button id="exportData" class="btn-secondary">
+                            <i class="fas fa-download"></i>
+                            Export Data
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="data-container">
+                    <div class="data-tabs">
+                        <button class="tab-btn active" data-tab="eeg">EEG Data</button>
+                        <button class="tab-btn" data-tab="vital">Vital Signs</button>
+                        <button class="tab-btn" data-tab="mood">Mood Analysis</button>
+                        <button class="tab-btn" data-tab="sessions">Sessions</button>
+                    </div>
+                    
+                    <div class="data-content">
+                        <!-- EEG Data Table -->
+                        <div id="eegDataTab" class="tab-content active">
+                            <div class="table-container">
+                                <table id="eegDataTable" class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Timestamp</th>
+                                            <th>Alpha</th>
+                                            <th>Beta</th>
+                                            <th>Theta</th>
+                                            <th>Delta</th>
+                                            <th>Gamma</th>
+                                            <th>Attention</th>
+                                            <th>Meditation</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Vital Signs Data Table -->
+                        <div id="vitalDataTab" class="tab-content">
+                            <div class="table-container">
+                                <table id="vitalDataTable" class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Timestamp</th>
+                                            <th>Heart Rate</th>
+                                            <th>SpO2</th>
+                                            <th>HRV RMSSD</th>
+                                            <th>HRV SDNN</th>
+                                            <th>Stress Index</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Mood Analysis Data Table -->
+                        <div id="moodDataTab" class="tab-content">
+                            <div class="table-container">
+                                <table id="moodDataTable" class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Timestamp</th>
+                                            <th>Predicted Mood</th>
+                                            <th>Confidence</th>
+                                            <th>Stress Level</th>
+                                            <th>Focus Level</th>
+                                            <th>Relaxation Level</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Sessions Data Table -->
+                        <div id="sessionsDataTab" class="tab-content">
+                            <div class="table-container">
+                                <table id="sessionsDataTable" class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Session ID</th>
+                                            <th>Start Time</th>
+                                            <th>End Time</th>
+                                            <th>Duration</th>
+                                            <th>Device MAC</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Login to NeuroFit</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">Email:</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password:</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Login</button>
+                </form>
+                <p class="auth-switch">
+                    Don't have an account? <a href="#" id="showSignup">Sign up</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div id="signupModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Sign Up for NeuroFit</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="signupForm">
+                    <div class="form-group">
+                        <label for="signupEmail">Email:</label>
+                        <input type="email" id="signupEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupPassword">Password:</label>
+                        <input type="password" id="signupPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupName">Full Name:</label>
+                        <input type="text" id="signupName" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Sign Up</button>
+                </form>
+                <p class="auth-switch">
+                    Already have an account? <a href="#" id="showLogin">Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/bluetooth.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/tensorflow-model.js"></script>
+    <script src="js/meditation.js"></script>
+    <script src="js/emergency.js"></script>
+    <script src="js/data-manager.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
